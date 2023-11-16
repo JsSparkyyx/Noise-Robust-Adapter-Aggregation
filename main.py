@@ -11,22 +11,12 @@ import torch
 from peft import LoraConfig, get_peft_model
 import numpy as np
 from init_parameters import init_parameters
+from data import split_data
 import random
 
-def split_data(args):
-    data = []
-    task = args.task
-
-    if args.dataset == 'glue':
-        dataset = load_dataset("JsSparkYyx/processed_glue", task)
-    return data
-
-def main(args):
+def train(index,dataset,args):
     model_name_or_path = args.model
     task = args.task
-
-    if args.dataset == 'glue':
-        dataset = load_dataset("JsSparkYyx/processed_glue", task)
     metric = evaluate.load("sacrebleu")
 
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
@@ -72,7 +62,7 @@ def main(args):
         return {"bleu": result["score"]}
 
     training_args = Seq2SeqTrainingArguments(
-        f"{model_name}-finetuned-lora-{task}",
+        f"{model_name}-finetuned-lora-{task}-{index}",
         evaluation_strategy="no",
         save_strategy="epoch",
         learning_rate=args.lr,
@@ -97,6 +87,13 @@ def main(args):
     )
     trainer.train(tokenized_datasets["test"])
     trainer.evaluate()
+    return
+
+def main(args):
+    (train_ds, test_ds, valid_ds) = split_data(args)
+    for i in range(args.num_clients):
+        dataset = {'train':train_ds[i],'test':test_ds[i],'valid':valid_ds[i]}
+        train(i,dataset,args)
     return
 
 if __name__ == '__main__':
