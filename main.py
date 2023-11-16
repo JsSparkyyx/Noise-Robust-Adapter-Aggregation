@@ -5,21 +5,25 @@ from transformers import (
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments
 )
-from datasets import load_dataset
 import evaluate
-import torch
 from peft import LoraConfig, get_peft_model
+from datasets import DatasetDict
 import numpy as np
 from init_parameters import init_parameters
-from data import split_data
-import random
+from data import split_data, set_seed
 
 def train(index,dataset,args):
     model_name_or_path = args.model
     task = args.task
     metric = evaluate.load("sacrebleu")
-
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+
+    def tokenize_function(examples):
+        # max_length=None => use the model max length (it's actually the default)
+        model_inputs = tokenizer(examples['source'], truncation=True, max_length=None)
+        model_inputs['labels'] = tokenizer(examples['target'], truncation=True, max_length=None)["input_ids"]
+        return model_inputs
+    
     tokenized_datasets = dataset.map(tokenize_function, batched=True, remove_columns=dataset['train'].column_names)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
     config = LoraConfig(
@@ -35,12 +39,6 @@ def train(index,dataset,args):
     model = get_peft_model(model, config)
     data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
     model.print_trainable_parameters()
-
-    def tokenize_function(examples):
-        # max_length=None => use the model max length (it's actually the default)
-        model_inputs = tokenizer(examples['source'], truncation=True, max_length=None)
-        model_inputs['labels'] = tokenizer(examples['target'], truncation=True, max_length=None)["input_ids"]
-        return model_inputs
 
     def compute_metrics(eval_preds):
         preds, labels = eval_preds
@@ -85,22 +83,18 @@ def train(index,dataset,args):
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
     )
-    trainer.train(tokenized_datasets["test"])
-    trainer.evaluate()
+    trainer.train()
+    trainer.evaluate(tokenized_datasets["test"])
     return
 
 def main(args):
     (train_ds, test_ds, valid_ds) = split_data(args)
     for i in range(args.num_clients):
-        dataset = {'train':train_ds[i],'test':test_ds[i],'valid':valid_ds[i]}
+        dataset = DatasetDict({'train':train_ds[i],'test':test_ds[i],'valid':valid_ds[i]})
         train(i,dataset,args)
     return
 
 if __name__ == '__main__':
     args = init_parameters()
-    seed = args.seed
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
+    set_seed(args.seed)
     main(args)
