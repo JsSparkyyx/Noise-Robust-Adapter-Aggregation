@@ -1,3 +1,7 @@
 import torch
 
-print(torch.cuda.is_available())
+def main():
+    return
+
+if __name__ == '__main__':
+    main()
