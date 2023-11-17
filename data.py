@@ -14,7 +14,7 @@ def k_split(num_clients,num_error_clients,dataset):
 
 def split_data(args):
     if args.dataset == 'glue':
-        dataset = load_dataset("JsSparkYyx/processed_glue", args.task).shuffle(seed=args.seed)
+        dataset = load_dataset("JsSparkYyx/NLP524", args.task).shuffle(seed=args.seed)
     train_ds = k_split(args.num_clients,args.num_error_clients,dataset['train'])
     test_ds = k_split(args.num_clients,args.num_error_clients,dataset['test'])
     valid_ds = k_split(args.num_clients,args.num_error_clients,dataset['valid'])
