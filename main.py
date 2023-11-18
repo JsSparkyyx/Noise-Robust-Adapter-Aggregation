@@ -1,5 +1,5 @@
 from transformers import (
-    AutoModelForSeq2SeqLM,
+    AutoModelForCausalLM,
     AutoTokenizer,
     DataCollatorForSeq2Seq,
     Seq2SeqTrainer,
@@ -25,7 +25,7 @@ def train(index,dataset,args):
         return model_inputs
     
     tokenized_datasets = dataset.map(tokenize_function, batched=True, remove_columns=dataset['train'].column_names)
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
+    model = AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True)
     config = LoraConfig(
         r=16,
         lora_alpha=16,
@@ -35,7 +35,7 @@ def train(index,dataset,args):
     )
 
     model_name = model_name_or_path.split("/")[-1]
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
+    model = AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True)
     model = get_peft_model(model, config)
     data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
     model.print_trainable_parameters()
