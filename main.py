@@ -1,10 +1,11 @@
 from transformers import (
-    AutoModelForCausalLM,
+    AutoModelForSeq2SeqLM,
     AutoTokenizer,
     DataCollatorForSeq2Seq,
-    Seq2SeqTrainer,
-    Seq2SeqTrainingArguments
+    Seq2SeqTrainingArguments,
+    Seq2SeqTrainer
 )
+from huggingface_hub import create_repo
 import evaluate
 from peft import LoraConfig, get_peft_model
 from datasets import DatasetDict
@@ -25,9 +26,10 @@ def train(index,dataset,args):
         return model_inputs
     
     tokenized_datasets = dataset.map(tokenize_function, batched=True, remove_columns=dataset['train'].column_names)
-    model = AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
     config = LoraConfig(
         r=16,
+        task_type="SEQ_2_SEQ_LM",
         lora_alpha=16,
         target_modules=["q","k","v","o"],
         lora_dropout=0.1,
@@ -35,7 +37,7 @@ def train(index,dataset,args):
     )
 
     model_name = model_name_or_path.split("/")[-1]
-    model = AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
     model = get_peft_model(model, config)
     data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
     model.print_trainable_parameters()
@@ -45,7 +47,8 @@ def train(index,dataset,args):
         # In case the model returns more than the prediction logits
         if isinstance(preds, tuple):
             preds = preds[0]
-
+        print(preds)
+        print(labels)
         decoded_preds = tokenizer.batch_decode(preds, skip_special_tokens=True)
 
         # Replace -100s in the labels as we can't decode them
@@ -59,9 +62,10 @@ def train(index,dataset,args):
         result = metric.compute(predictions=decoded_preds, references=decoded_labels)
         return {"bleu": result["score"]}
 
+    create_repo(repo_id=f"{model_name}-finetuned-lora-{task}-{index}",token="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")
     training_args = Seq2SeqTrainingArguments(
-        f"{model_name}-finetuned-lora-{task}-{index}",
-        evaluation_strategy="no",
+        f"JsSparkYyx/{model_name}-finetuned-lora-{task}-{index}",
+        evaluation_strategy="epoch",
         save_strategy="epoch",
         learning_rate=args.lr,
         per_device_train_batch_size=args.batch_size,
@@ -70,7 +74,6 @@ def train(index,dataset,args):
         save_total_limit=3,
         num_train_epochs=args.epochs,
         remove_unused_columns=False,
-        predict_with_generate=True,
         fp16=True,
     )
 
