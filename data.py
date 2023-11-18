@@ -20,10 +20,14 @@ def split_data(args):
         dataset = load_dataset("JsSparkYyx/NLP524", args.task).shuffle(seed=args.seed)
     if args.dataset == 'bigbench':
         dataset = load_dataset("tasksource/bigbench", args.task).shuffle(seed=args.seed)
-        dataset.rename_columns({'inputs':'source','targets':'target'})
+        dataset = dataset.rename_columns({'inputs':'source','targets':'target'})
     train_ds = k_split(args.num_clients,args.num_error_clients,dataset['train'])
-    test_ds = k_split(args.num_clients,args.num_error_clients,dataset['test'])
-    valid_ds = k_split(args.num_clients,args.num_error_clients,dataset['valid'])
+    if args.dataset == 'glue':
+        test_ds = k_split(args.num_clients,args.num_error_clients,dataset['test'])
+        valid_ds = k_split(args.num_clients,args.num_error_clients,dataset['valid'])
+    else:
+        test_ds = None
+        valid_ds = k_split(args.num_clients,args.num_error_clients,dataset['validation'])
     return (train_ds, test_ds, valid_ds)
 
 def set_seed(seed):
