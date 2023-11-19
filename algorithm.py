@@ -17,10 +17,10 @@ def average_aggregation(base_model, lora_adaptors):
                 )
     return update_lora_weights(base_model, final_state_dict)
 
-def lorahub_aggregation(model, lora_adaptors, data, tokenizer, batch_size, sample_size = 20, seed = 42):
+def lorahub_aggregation(model, lora_adaptors, data, tokenizer, batch_size, sample_size = 5, max_inference_step = 40, seed = 42):
     data = data[:sample_size]
     weights, model = lorahub_learning(lora_adaptors = lora_adaptors,
-                                       model = data,
+                                       model = model,
                                        data = data,
                                        tokenizer = tokenizer,
                                        batch_size = batch_size,

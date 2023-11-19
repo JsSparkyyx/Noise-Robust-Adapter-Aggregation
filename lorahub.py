@@ -255,6 +255,8 @@ def lorahub_learning(lora_adaptors,
     random.seed(seed)
     numpy.random.seed(seed)
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model = model.to(device)
     number_of_loras = len(lora_adaptors)
     cache = {}
     lora_module_list = [i for i in range(number_of_loras)]
