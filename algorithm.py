@@ -1,6 +1,6 @@
 from transformers import AutoModelForSeq2SeqLM
 from peft import PeftModel, get_peft_model_state_dict, set_peft_model_state_dict
-from lorahub import lorahub_inference
+from lorahub import lorahub_learning
 
 def average_aggregation(base_model, lora_adaptors):
     weight = 1/len(lora_adaptors)
@@ -19,7 +19,7 @@ def average_aggregation(base_model, lora_adaptors):
 
 def lorahub_aggregation(model, lora_adaptors, data, tokenizer, batch_size, sample_size = 20, seed = 42):
     data = data[:sample_size]
-    weights, model = lorahub_inference(lora_adaptors = lora_adaptors,
+    weights, model = lorahub_learning(lora_adaptors = lora_adaptors,
                                        model = data,
                                        data = data,
                                        tokenizer = tokenizer,
