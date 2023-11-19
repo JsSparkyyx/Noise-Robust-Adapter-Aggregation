@@ -38,6 +38,9 @@ def set_seed(seed):
     torch.cuda.manual_seed(seed)
 
 def retrive_data(ds,number):
+    '''
+    retrive the data of client i
+    '''
     (train_ds, valid_ds) = ds
     return DatasetDict({'train':train_ds[number],'valid':valid_ds[number]})
 
@@ -52,7 +55,7 @@ def accuracy_score(outputs, ground_truths, data_name):
         total += 1
     return correct / total * 100
 
-def evaluation(data, model, tokenizer, batch_size = 128):
+def evaluation(data, model, tokenizer, data_name, batch_size = 128):
     example_predictions = []
     eval_set = "valid"
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -74,5 +77,5 @@ def evaluation(data, model, tokenizer, batch_size = 128):
             )
             example_predictions.extend(outputs)
 
-    task_perf = accuracy_score(example_predictions, data[eval_set]["target"])
+    task_perf = accuracy_score(example_predictions, data[eval_set]["target"], data_name)
     return task_perf, example_predictions

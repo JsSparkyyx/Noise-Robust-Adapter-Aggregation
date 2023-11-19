@@ -25,7 +25,7 @@ def lorahub_aggregation(model, lora_adaptors, data, tokenizer, batch_size, sampl
                                        data = data,
                                        tokenizer = tokenizer,
                                        batch_size = batch_size,
-                                       max_inference_step = 40,
+                                       max_inference_step = max_inference_step,
                                        seed = seed)
     return weights, model
 
