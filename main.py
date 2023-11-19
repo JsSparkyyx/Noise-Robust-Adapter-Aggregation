@@ -11,7 +11,7 @@ from peft import LoraConfig, get_peft_model
 from datasets import DatasetDict
 import numpy as np
 from init_parameters import init_parameters
-from data import split_data, set_seed
+from utils import split_data, set_seed
 
 def train(index,dataset,args):
     model_name_or_path = args.model
