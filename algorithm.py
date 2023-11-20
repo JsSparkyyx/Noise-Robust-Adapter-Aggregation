@@ -49,8 +49,6 @@ def combination(n, k):
     combinations_n_k = list(combinations(elements, k))
     return combinations_n_k
 
-
-
 def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenizer):
     # "adapters" should be a list of adapters
     total = len(lora_adaptors)
