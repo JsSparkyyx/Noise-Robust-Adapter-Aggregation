@@ -2,7 +2,7 @@ from utils import evaluation, set_seed, k_split, retrive_data
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 from datasets import load_dataset
 from peft import PeftModel, get_peft_model_state_dict
-from algorithm import lorahub_aggregation, average_aggregation
+from algorithm import lorahub_aggregation, average_aggregation, cross_validation
 import numpy as np
 from tqdm import tqdm
 import os
@@ -125,7 +125,7 @@ def reproduce_cross_validation_aggregation():
         for number in range(num_clients):
             base_model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
             base_lora = PeftModel.from_pretrained(base_model,f'JsSparkYyx/flan-t5-base-finetuned-lora-{task}-0')
-            cv_model = cross_validation(base_lora, lora_adaptors, num_error_client, data, tokenizer)
+            cv_model = cross_validation(base_lora, lora_adaptors, num_error_clients, data, tokenizer)
             for i in range(num_clients):
                 data = retrive_data(ds, i)
                 task_perf, example_predictions = evaluation(data,cv_model,tokenizer, data_name, batch_size=eval_batch_size)
@@ -134,11 +134,11 @@ def reproduce_cross_validation_aggregation():
         results[num_clients] = np.mean(results[:num_clients],axis=0)
         print(results)
         np.savetxt(os.path.join(task_dir,f'{task}_lorahub.csv'), results, delimiter=',')
-        np.savetxt(os.path.join(task_dir,f'{task}_lorahub_weights.csv'), lora_weights, delimiter=',')
 
 if __name__ == '__main__':
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
     # reproduce_average_aggregation()
-    reproduce_single_model()
+    # reproduce_single_model()
     # reproduce_lorahub_aggregation()
+    reproduce_cross_validation_aggregation()
