@@ -5,7 +5,7 @@ from itertools import combinations
 from utils import evaluation
 from copy import deepcopy
 import numpy as np
-from tqdm import trange, tqdm
+from tqdm import tqdm
 
 def average_aggregation(base_model, lora_adaptors):
     weight = 1/len(lora_adaptors)
@@ -74,7 +74,7 @@ def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenize
         aggregated.append(weights)
     performance = -1
     best = -1
-    for i in trange(len(aggregated)):
+    for i in range(len(aggregated)):
         model = aggregated[i]
         task_perf_cross_val, example_predictions_error = evaluation(data, model, tokenizer, batch_size=32, sampling = sampling)
         if performance < task_perf_cross_val:

@@ -114,7 +114,7 @@ def reproduce_cross_validation_aggregation():
     print('Evaluation for method cross validation aggregation')
     for task in tqdm(task_set):
         results = np.zeros((num_clients+1,num_clients+1))
-        cv_weights = np.zeros((num_clients,num_clients))
+        cv_weights = np.zeros((num_clients,num_clients-num_error_clients))
         data_name = 'glue' if task in ['mnli','qnli','sst2','qqp'] else 'bigbench'
         task_dir = os.path.join(result_dir, data_name)
         if not os.path.exists(task_dir):
