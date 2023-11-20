@@ -141,10 +141,42 @@ def reproduce_cross_validation_aggregation():
         np.savetxt(os.path.join(task_dir,f'{task}_cv.csv'), results, delimiter=',')
         np.savetxt(os.path.join(task_dir,f'{task}_cv_weights.csv'), cv_weights, delimiter=',')
 
+def reproduce_cross_validation_fine_aggregation():
+    print('Evaluation for method cross validation aggregation')
+    for task in tqdm(task_set):
+        results = np.zeros((num_clients+1,num_clients+1))
+        cv_weights = np.zeros((num_clients,num_clients-num_error_clients))
+        data_name = 'glue' if task in ['mnli','qnli','sst2','qqp'] else 'bigbench'
+        task_dir = os.path.join(result_dir, data_name)
+        if not os.path.exists(task_dir):
+            os.makedirs(task_dir)
+        lora_adaptors = []
+        for i in range(num_clients):
+            base_model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
+            lora_model = PeftModel.from_pretrained(base_model,f'JsSparkYyx/flan-t5-base-finetuned-lora-{task}-{i}')
+            lora_adaptors.append(get_peft_model_state_dict(lora_model))
+        ds = split_data(data_name, task)
+        for number in range(3,num_clients):
+            data = retrive_data(ds, number)
+            base_model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
+            base_lora = PeftModel.from_pretrained(base_model,f'JsSparkYyx/flan-t5-base-finetuned-lora-{task}-0')
+            cv_model, weights = cross_validation(base_lora, lora_adaptors, num_error_clients, data, tokenizer, max_search_epoch=150, sampling=500)
+            for i in range(3,num_clients):
+                data = retrive_data(ds, i)
+                task_perf, example_predictions = evaluation(data,cv_model,tokenizer, batch_size=eval_batch_size)
+                results[number,i] = task_perf
+            cv_weights[number] = weights
+            results[number,num_clients] = np.mean(results[number,3:num_clients])
+        results[num_clients,3:] = np.mean(results[:num_clients,3:],axis=0)
+        print(results)
+        np.savetxt(os.path.join(task_dir,f'{task}_cv_fine.csv'), results, delimiter=',')
+        np.savetxt(os.path.join(task_dir,f'{task}_cv_fine_weights.csv'), cv_weights, delimiter=',')
+
 if __name__ == '__main__':
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
     # reproduce_average_aggregation()
     # reproduce_single_model()
     # reproduce_lorahub_aggregation()
-    reproduce_cross_validation_aggregation()
+    # reproduce_cross_validation_aggregation()
+    reproduce_cross_validation_fine_aggregation()
