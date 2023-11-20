@@ -1,6 +1,8 @@
 from transformers import AutoModelForSeq2SeqLM
 from peft import PeftModel, get_peft_model_state_dict, set_peft_model_state_dict
 from lorahub import lorahub_learning
+from itertools import combinations
+from utils import evaluation
 
 def average_aggregation(base_model, lora_adaptors):
     weight = 1/len(lora_adaptors)
@@ -40,4 +42,36 @@ def update_lora_weights(model, state_dict):
     set_peft_model_state_dict(model,state_dict)
     model = model.merge_and_unload()
     return model
+
+def combination(n, k):
+    # generate C_n_k, n is the total number of adapters, k is the number of error clients
+    elements = range(n)
+    combinations_n_k = list(combinations(elements, k))
+    return combinations_n_k
+
+
+
+def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenizer):
+    # "adapters" should be a list of adapters
+    total = len(lora_adaptors)
+    combination_n_k = combination(total, num_error_client)
+
+    aggregated = []
+    for outside in combination_n_k:
+        inside = []
+        for i, lora_adaptor in enumerate(lora_adaptors):
+            if i not in outside:
+                # aggregate
+                inside.append(lora_adaptor)
+        weights = average_aggregation(base_model, inside)
+        aggregated.append(weights)
+    performance = 0
+    best = -1
+    for i in range(len(aggregated)):
+        model = aggregated[i]
+        task_perf_cross_val, example_predictions_error = evaluation(data, model, tokenizer, batch_size=8)
+        if performance < task_perf_cross_val:
+            performance = task_perf_cross_val
+            best = i
+    return aggregated[i]
 
