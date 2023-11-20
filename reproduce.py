@@ -73,7 +73,7 @@ def reproduce_single_model():
                 task_perf, example_predictions = evaluation(data,base_lora,tokenizer, data_name, batch_size=eval_batch_size)
                 results[number,i] = task_perf
             results[number,num_clients] = np.mean(results[number,:num_clients])
-        results[num_clients+1] = np.mean(results[:num_clients],axis=0)
+        results[num_clients] = np.mean(results[:num_clients],axis=0)
         print(results)
         np.savetxt(os.path.join(task_dir,f'{task}_lorahub.csv'), results, delimiter=',')
 
@@ -102,7 +102,7 @@ def reproduce_lorahub_aggregation():
                 results[number,i] = task_perf
             lora_weights[number] = weights
             results[number,num_clients] = np.mean(results[number,:num_clients])
-        results[num_clients+1] = np.mean(results[:num_clients],axis=0)
+        results[num_clients] = np.mean(results[:num_clients],axis=0)
         print(results)
         print(lora_weights)
         np.savetxt(os.path.join(task_dir,f'{task}_lorahub.csv'), results, delimiter=',')
