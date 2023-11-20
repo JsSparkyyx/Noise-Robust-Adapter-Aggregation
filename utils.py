@@ -53,16 +53,20 @@ def accuracy_score(outputs, ground_truths):
         total += 1
     return correct / total * 100
 
-def evaluation(data, model, tokenizer, batch_size = 128):
+def evaluation(data, model, tokenizer, batch_size = 128, sampling = None):
     example_predictions = []
     eval_set = "valid"
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    data = data[eval_set]
+    if sampling is not None:
+        choice = np.random.choice(len(data["source"]),sampling)
+        data = data[choice]
     model.eval()
     model.to(device)
     with torch.no_grad():
-        for i in trange(0, len(data[eval_set]["source"]), batch_size):
+        for i in trange(0, len(data["source"]), batch_size):
             inputs = tokenizer(
-                    data[eval_set]["source"][i : i + batch_size],
+                    data["source"][i : i + batch_size],
                     max_length=2048,
                     return_tensors="pt",
                     padding=True,
@@ -75,5 +79,5 @@ def evaluation(data, model, tokenizer, batch_size = 128):
             )
             example_predictions.extend(outputs)
 
-    task_perf = accuracy_score(example_predictions, data[eval_set]["target"])
+    task_perf = accuracy_score(example_predictions, data["target"])
     return task_perf, example_predictions

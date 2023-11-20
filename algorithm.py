@@ -4,6 +4,8 @@ from lorahub import lorahub_learning
 from itertools import combinations
 from utils import evaluation
 from copy import deepcopy
+import numpy as np
+from tqdm import trange, tqdm
 
 def average_aggregation(base_model, lora_adaptors):
     weight = 1/len(lora_adaptors)
@@ -50,27 +52,33 @@ def combination(n, k):
     combinations_n_k = list(combinations(elements, k))
     return combinations_n_k
 
-def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenizer):
+def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenizer, max_search_epoch=30, sampling = 50):
     # "adapters" should be a list of adapters
     total = len(lora_adaptors)
     combination_n_k = combination(total, num_error_client)
 
     aggregated = []
-    for outside in combination_n_k:
+    selected = []
+    choice = np.random.choice(len(combination_n_k), max_search_epoch)
+    combination_n_k = [combination_n_k[i] for i in choice]
+    for outside in tqdm(combination_n_k):
         inside = []
+        select = []
         for i, lora_adaptor in enumerate(lora_adaptors):
             if i not in outside:
                 # aggregate
+                select.append(i)
                 inside.append(lora_adaptor)
+        selected.append(select)
         weights = average_aggregation(deepcopy(base_model), inside)
         aggregated.append(weights)
     performance = -1
     best = -1
-    for i in range(len(aggregated)):
+    for i in trange(len(aggregated)):
         model = aggregated[i]
-        task_perf_cross_val, example_predictions_error = evaluation(data, model, tokenizer, batch_size=8)
+        task_perf_cross_val, example_predictions_error = evaluation(data, model, tokenizer, batch_size=32, sampling = sampling)
         if performance < task_perf_cross_val:
             performance = task_perf_cross_val
             best = i
-    return aggregated[best]
+    return aggregated[best], selected[best]
 
