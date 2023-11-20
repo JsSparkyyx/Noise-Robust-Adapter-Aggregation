@@ -3,7 +3,7 @@ from peft import PeftModel, get_peft_model_state_dict, set_peft_model_state_dict
 from lorahub import lorahub_learning
 from itertools import combinations
 from utils import evaluation
-
+from copy import deepcopy
 def average_aggregation(base_model, lora_adaptors):
     weight = 1/len(lora_adaptors)
     final_state_dict = {}
@@ -61,9 +61,9 @@ def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenize
             if i not in outside:
                 # aggregate
                 inside.append(lora_adaptor)
-        weights = average_aggregation(base_model, inside)
+        weights = average_aggregation(deepcopy(base_model), inside)
         aggregated.append(weights)
-    performance = 0
+    performance = -1
     best = -1
     for i in range(len(aggregated)):
         model = aggregated[i]
@@ -71,5 +71,5 @@ def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenize
         if performance < task_perf_cross_val:
             performance = task_perf_cross_val
             best = i
-    return aggregated[i]
+    return aggregated[best]
 
