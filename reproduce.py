@@ -127,7 +127,7 @@ def reproduce_cross_validation_aggregation():
             data = retrive_data(ds, number)
             base_model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
             base_lora = PeftModel.from_pretrained(base_model,f'JsSparkYyx/flan-t5-base-finetuned-lora-{task}-0')
-            cv_model = cross_validation(base_lora, lora_adaptors, num_error_clients, data, tokenizer)
+            cv_model = cross_validation(base_lora, lora_adaptors, num_error_clients, data, tokenizer, data_name)
             for i in range(num_clients):
                 data = retrive_data(ds, i)
                 task_perf, example_predictions = evaluation(data,cv_model,tokenizer, data_name, batch_size=eval_batch_size)
