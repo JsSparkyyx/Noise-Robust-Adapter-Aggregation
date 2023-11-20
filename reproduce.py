@@ -135,12 +135,12 @@ def reproduce_cross_validation_aggregation():
             results[number,num_clients] = np.mean(results[number,:num_clients])
         results[num_clients] = np.mean(results[:num_clients],axis=0)
         print(results)
-        np.savetxt(os.path.join(task_dir,f'{task}_lorahub.csv'), results, delimiter=',')
+        np.savetxt(os.path.join(task_dir,f'{task}_cv.csv'), results, delimiter=',')
 
 if __name__ == '__main__':
     if not os.path.exists(result_dir):
         os.makedirs(result_dir)
     # reproduce_average_aggregation()
     # reproduce_single_model()
-    reproduce_lorahub_aggregation()
-    # reproduce_cross_validation_aggregation()
+    # reproduce_lorahub_aggregation()
+    reproduce_cross_validation_aggregation()
