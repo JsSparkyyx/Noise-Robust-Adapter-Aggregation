@@ -14,7 +14,7 @@ num_error_clients = 3
 lora_sample_size = 5
 result_dir = './results'
 model_name_or_path = 'google/flan-t5-base'
-eval_batch_size = 16
+eval_batch_size = 32
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
 set_seed(seed)
 
@@ -95,6 +95,7 @@ def reproduce_lorahub_aggregation():
         for number in range(num_clients):
             base_model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
             base_lora = PeftModel.from_pretrained(base_model,f'JsSparkYyx/flan-t5-base-finetuned-lora-{task}-0')
+            data = retrive_data(ds, number)
             weights, lorahub_model = lorahub_aggregation(base_lora, lora_adaptors, data["valid"], tokenizer, batch_size = lora_sample_size, sample_size = lora_sample_size, seed = seed)   
             for i in range(num_clients):
                 data = retrive_data(ds, i)
@@ -123,6 +124,7 @@ def reproduce_cross_validation_aggregation():
             lora_adaptors.append(get_peft_model_state_dict(lora_model))
         ds = split_data(data_name, task)
         for number in range(num_clients):
+            data = retrive_data(ds, number)
             base_model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
             base_lora = PeftModel.from_pretrained(base_model,f'JsSparkYyx/flan-t5-base-finetuned-lora-{task}-0')
             cv_model = cross_validation(base_lora, lora_adaptors, num_error_clients, data, tokenizer)
@@ -140,5 +142,5 @@ if __name__ == '__main__':
         os.makedirs(result_dir)
     # reproduce_average_aggregation()
     # reproduce_single_model()
-    # reproduce_lorahub_aggregation()
-    reproduce_cross_validation_aggregation()
+    reproduce_lorahub_aggregation()
+    # reproduce_cross_validation_aggregation()
