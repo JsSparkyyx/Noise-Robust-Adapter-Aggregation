@@ -54,7 +54,7 @@ def reproduce_average_aggregation():
             results[number] = task_perf
         results[num_clients] = np.mean(results[:num_clients])
         print(results)
-        np.savetxt(os.path.join(task_dir,f'{task}_single.csv'), results, delimiter=',')
+        np.savetxt(os.path.join(task_dir,f'{task}_avg.csv'), results, delimiter=',')
 
 def reproduce_single_model():
     print('Evaluation for method single model')
@@ -75,7 +75,7 @@ def reproduce_single_model():
             results[number,num_clients] = np.mean(results[number,:num_clients])
         results[num_clients] = np.mean(results[:num_clients],axis=0)
         print(results)
-        np.savetxt(os.path.join(task_dir,f'{task}_lorahub.csv'), results, delimiter=',')
+        np.savetxt(os.path.join(task_dir,f'{task}_single.csv'), results, delimiter=',')
 
 def reproduce_lorahub_aggregation():
     print('Evaluation for method lorahub aggregation')
