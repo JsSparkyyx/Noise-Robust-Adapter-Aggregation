@@ -7,8 +7,8 @@ import numpy as np
 from tqdm import tqdm
 import os
 
-# task_set = ['mnli','qnli','sst2','qqp','elementary_math_qa','cryptonite','intersect_geometry','list_functions','tracking_shuffled_objects']
-task_set = ['elementary_math_qa']
+task_set = ['mnli','qnli','sst2','qqp','elementary_math_qa','cryptonite','intersect_geometry','list_functions','tracking_shuffled_objects']
+# task_set = ['elementary_math_qa']
 seed = 42
 num_clients = 10
 num_error_clients = 3
@@ -136,7 +136,7 @@ def reproduce_cross_validation_aggregation():
                 results[number,i] = task_perf
             cv_weights[number] = weights
             results[number,num_clients] = np.mean(results[number,3:num_clients])
-        results[num_clients] = np.mean(results[:num_clients,3:],axis=0)
+        results[num_clients,3:] = np.mean(results[:num_clients,3:],axis=0)
         print(results)
         np.savetxt(os.path.join(task_dir,f'{task}_cv.csv'), results, delimiter=',')
         np.savetxt(os.path.join(task_dir,f'{task}_cv_weights.csv'), cv_weights, delimiter=',')
@@ -146,5 +146,5 @@ if __name__ == '__main__':
         os.makedirs(result_dir)
     # reproduce_average_aggregation()
     # reproduce_single_model()
-    reproduce_lorahub_aggregation()
-    # reproduce_cross_validation_aggregation()
+    # reproduce_lorahub_aggregation()
+    reproduce_cross_validation_aggregation()
