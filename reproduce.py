@@ -7,7 +7,8 @@ import numpy as np
 from tqdm import tqdm
 import os
 
-task_set = ['mnli','qnli','sst2','qqp','elementary_math_qa','cryptonite','intersect_geometry','list_functions','tracking_shuffled_objects']
+# task_set = ['mnli','qnli','sst2','qqp','elementary_math_qa','cryptonite','intersect_geometry','list_functions','tracking_shuffled_objects']
+task_set = ['cryptonite','intersect_geometry','list_functions','tracking_shuffled_objects']
 seed = 42
 num_clients = 10
 num_error_clients = 3
@@ -24,11 +25,11 @@ def split_data(data_name, task):
     if data_name == 'bigbench':
         dataset = load_dataset("tasksource/bigbench", task).shuffle(seed=seed)
         dataset = dataset.rename_columns({'inputs':'source','targets':'target'})
-    train_ds = k_split(num_clients,num_error_clients,dataset['train'])
+    train_ds = k_split(num_clients,num_error_clients,dataset['train'],data_name)
     if data_name == 'glue':
-        valid_ds = k_split(num_clients,num_error_clients,dataset['valid'])
+        valid_ds = k_split(num_clients,num_error_clients,dataset['valid'],data_name)
     else:
-        valid_ds = k_split(num_clients,num_error_clients,dataset['validation'])
+        valid_ds = k_split(num_clients,num_error_clients,dataset['validation'],data_name)
     return (train_ds, valid_ds)
 
 def reproduce_average_aggregation():
@@ -70,7 +71,7 @@ def reproduce_single_model():
             base_lora = PeftModel.from_pretrained(base_model,f'JsSparkYyx/flan-t5-base-finetuned-lora-{task}-{number}')
             for i in range(num_clients):
                 data = retrive_data(ds, i)
-                task_perf, example_predictions = evaluation(data,base_lora,tokenizer, data_name, batch_size=eval_batch_size)
+                task_perf, example_predictions = evaluation(data,base_lora,tokenizer, batch_size=eval_batch_size)
                 results[number,i] = task_perf
             results[number,num_clients] = np.mean(results[number,:num_clients])
         results[num_clients] = np.mean(results[:num_clients],axis=0)
@@ -99,7 +100,7 @@ def reproduce_lorahub_aggregation():
             weights, lorahub_model = lorahub_aggregation(base_lora, lora_adaptors, data["valid"], tokenizer, batch_size = lora_sample_size, sample_size = lora_sample_size, seed = seed)   
             for i in range(num_clients):
                 data = retrive_data(ds, i)
-                task_perf, example_predictions = evaluation(data,lorahub_model,tokenizer, data_name, batch_size=eval_batch_size)
+                task_perf, example_predictions = evaluation(data,lorahub_model,tokenizer, batch_size=eval_batch_size)
                 results[number,i] = task_perf
             lora_weights[number] = weights
             results[number,num_clients] = np.mean(results[number,:num_clients])
@@ -127,10 +128,10 @@ def reproduce_cross_validation_aggregation():
             data = retrive_data(ds, number)
             base_model = AutoModelForSeq2SeqLM.from_pretrained(model_name_or_path, return_dict=True)
             base_lora = PeftModel.from_pretrained(base_model,f'JsSparkYyx/flan-t5-base-finetuned-lora-{task}-0')
-            cv_model = cross_validation(base_lora, lora_adaptors, num_error_clients, data, tokenizer, data_name)
+            cv_model = cross_validation(base_lora, lora_adaptors, num_error_clients, data, tokenizer)
             for i in range(num_clients):
                 data = retrive_data(ds, i)
-                task_perf, example_predictions = evaluation(data,cv_model,tokenizer, data_name, batch_size=eval_batch_size)
+                task_perf, example_predictions = evaluation(data,cv_model,tokenizer, batch_size=eval_batch_size)
                 results[number,i] = task_perf
             results[number,num_clients] = np.mean(results[number,:num_clients])
         results[num_clients] = np.mean(results[:num_clients],axis=0)
@@ -142,5 +143,5 @@ if __name__ == '__main__':
         os.makedirs(result_dir)
     # reproduce_average_aggregation()
     # reproduce_single_model()
-    # reproduce_lorahub_aggregation()
-    reproduce_cross_validation_aggregation()
+    reproduce_lorahub_aggregation()
+    # reproduce_cross_validation_aggregation()

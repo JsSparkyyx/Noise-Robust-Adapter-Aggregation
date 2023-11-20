@@ -22,10 +22,7 @@ def train(index,dataset,args):
     def tokenize_function(examples):
         # max_length=None => use the model max length (it's actually the default)
         model_inputs = tokenizer(examples['source'], truncation=True, max_length=None)
-        if args.dataset == 'glue':
-            model_inputs['labels'] = tokenizer(examples['target'], truncation=True, max_length=None)["input_ids"]
-        else:
-            model_inputs['labels'] = tokenizer([i[0] for i in examples['target']], truncation=True, max_length=None)["input_ids"]
+        model_inputs['labels'] = tokenizer(examples['target'], truncation=True, max_length=None)["input_ids"]
         return model_inputs
     
     tokenized_datasets = dataset.map(tokenize_function, batched=True, remove_columns=dataset['train'].column_names)
@@ -97,12 +94,9 @@ def train(index,dataset,args):
     return
 
 def main(args):
-    (train_ds, test_ds, valid_ds) = split_data(args)
+    (train_ds, valid_ds) = split_data(args)
     for i in range(args.num_clients):
-        if args.dataset == 'glue':
-            dataset = DatasetDict({'train':train_ds[i],'test':test_ds[i],'valid':valid_ds[i]})
-        else:
-            dataset = DatasetDict({'train':train_ds[i],'valid':valid_ds[i]})
+        dataset = DatasetDict({'train':train_ds[i],'valid':valid_ds[i]})
         train(i,dataset,args)
     return
 

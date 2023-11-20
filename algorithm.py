@@ -4,6 +4,7 @@ from lorahub import lorahub_learning
 from itertools import combinations
 from utils import evaluation
 from copy import deepcopy
+
 def average_aggregation(base_model, lora_adaptors):
     weight = 1/len(lora_adaptors)
     final_state_dict = {}
@@ -49,7 +50,7 @@ def combination(n, k):
     combinations_n_k = list(combinations(elements, k))
     return combinations_n_k
 
-def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenizer, data_name):
+def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenizer):
     # "adapters" should be a list of adapters
     total = len(lora_adaptors)
     combination_n_k = combination(total, num_error_client)
@@ -67,7 +68,7 @@ def cross_validation(base_model, lora_adaptors, num_error_client, data, tokenize
     best = -1
     for i in range(len(aggregated)):
         model = aggregated[i]
-        task_perf_cross_val, example_predictions_error = evaluation(data, model, tokenizer, data_name, batch_size=8)
+        task_perf_cross_val, example_predictions_error = evaluation(data, model, tokenizer, batch_size=8)
         if performance < task_perf_cross_val:
             performance = task_perf_cross_val
             best = i
