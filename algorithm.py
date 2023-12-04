@@ -22,6 +22,20 @@ def average_aggregation(base_model, lora_adaptors):
                 )
     return update_lora_weights(base_model, final_state_dict)
 
+def weighted_aggregation(base_model, lora_adaptors, weights):
+    final_state_dict = {}
+    keys = lora_adaptors[0].keys()
+    for i, lora_adaptor in enumerate(lora_adaptors):
+        if i == 0:
+            for key in keys:
+                final_state_dict[key] = weights[i] * lora_adaptor[key]
+        else:
+            for key in keys:
+                final_state_dict[key] = (
+                    final_state_dict[key] + weights[i] * lora_adaptor[key]
+                )
+    return update_lora_weights(base_model, final_state_dict)
+
 def lorahub_aggregation(model, lora_adaptors, data, tokenizer, batch_size, sample_size = 5, max_inference_step = 40, seed = 42):
     data = data[:sample_size]
     weights, model = lorahub_learning(lora_adaptors = lora_adaptors,
