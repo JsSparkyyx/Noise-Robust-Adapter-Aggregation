@@ -15,6 +15,7 @@ from peft import PeftModel, PeftConfig
 from functools import partial
 from typing import List, Optional, Union
 import copy
+import numpy as np
 
 def load_base_model_and_lora_modules(lora_module_list: List[str], model_name_or_path: Optional[str] = None):
     """load base model and lora modules from huggingface model hub
@@ -135,11 +136,12 @@ def default_get_loss(example_dataset, model, batch_size):
     # average loss over the number of examples
     return float(loss) / len(example_dataset["input"])
 
-def default_kl_rep():
-    rep1 = single
-    rep2 = aggregated
-    import numpy as np
-    np.
+def default_kl_rep(p, q):
+    kl_div = 0.0
+    for i in range(len(p)):
+        kl_div += torch.sum(p[i] * torch.log(p[i] / q[i]))
+    return kl_div.item()
+
 
 def default_l1_regularization(weights):
     """
@@ -150,6 +152,10 @@ def default_l1_regularization(weights):
 
 def get_score(weights, model, cache, example_dataset, batch_size, get_loss, get_regular, get_kl_rep):
     # the composed lora state dict
+    single = model.state_dict()
+    single_model = []
+    for key in single.keys():
+        single_model.append(single[key])
     final_state_dict = {}
     # module list is the list
     lora_module_list = list(cache.keys())
@@ -167,11 +173,14 @@ def get_score(weights, model, cache, example_dataset, batch_size, get_loss, get_
                 )
     # reload the model with the new adapter config
     set_peft_model_state_dict(model, final_state_dict)
-        
+    aggregated = model.state_dict()
+    aggregated_model = []
+    for key in aggregated.keys():
+        aggregated_model.append(aggregated[key])
     # minimize the metric
     loss = get_loss(example_dataset, model, batch_size)
     # L1 regularization term
-    metric_val = loss + get_regular(weights) + get_kl_rep(example_dataset, model, batch_size, single_model)
+    metric_val = loss + get_regular(weights) + get_kl_rep(single_model, aggregated_model)
     
     return metric_val
 
