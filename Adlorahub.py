@@ -150,6 +150,13 @@ def default_l1_regularization(weights):
     sum_of_squares = sum([abs(x) for x in weights]) / len(weights)
     return 0.05 * sum_of_squares
 
+def default_l2_regularization(weights):
+    """
+    Get the L2 regularization term for the weights
+    """
+    sum_of_squares = sum([(x * x) for x in weights]) / len(weights)
+    return 0.05 * sum_of_squares
+
 def get_score(weights, model, cache, example_dataset, batch_size, get_loss, get_regular, get_kl_rep):
     # the composed lora state dict
     single = model.state_dict()
@@ -180,7 +187,11 @@ def get_score(weights, model, cache, example_dataset, batch_size, get_loss, get_
     # minimize the metric
     loss = get_loss(example_dataset, model, batch_size)
     # L1 regularization term
-    metric_val = loss + get_regular(weights) + get_kl_rep(single_model, aggregated_model)
+    L2 = default_l2_regularization(weights)
+    KL = get_kl_rep(single_model, aggregated_model)
+    print(L2)
+    print(KL)
+    metric_val = loss + get_regular(weights) + KL + L2
     
     return metric_val
 
