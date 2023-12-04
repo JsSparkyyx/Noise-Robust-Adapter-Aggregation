@@ -124,17 +124,31 @@ def default_get_loss(example_dataset, model, batch_size):
         pin_memory=True,
     )
     train_loss = 0
+    logits_list = []
+    decoder_hidden_states_list = []
     with torch.no_grad():
         device = "cuda" if torch.cuda.is_available() else "cpu"
         for _, batch in enumerate(train_dataloader):
             batch = {k: v.to(device) for k, v in batch.items()}
             with torch.no_grad():
-                outputs = model(**batch)
+                outputs = model(**batch, output_hidden_states=True)
             loss = outputs.loss
+            logits = outputs.logits
+            hidden_states = outputs.decoder_hidden_states
+            embedding = hidden_states[0]
+            outputs_ = hidden_states[1]
+            logits_list.append(logits)
+            decoder_hidden_states_list.append(outputs_)
             train_loss += loss.detach().float()
     loss = train_loss.float()
+    logits = logits_list[0]
+    for i in range(1, len(logits_list)):
+        logits += logits_list[i]
+    decoder_hidden_states = decoder_hidden_states_list[0]
+    for i in range(1, len(decoder_hidden_states_list)):
+        decoder_hidden_states += decoder_hidden_states_list[i]
     # average loss over the number of examples
-    return float(loss) / len(example_dataset["input"])
+    return float(loss) / len(example_dataset["input"]), logits, decoder_hidden_states
 
 def default_kl_rep(p, q):
     kl_div = 0.0
@@ -163,6 +177,7 @@ def get_score(weights, model, cache, example_dataset, batch_size, get_loss, get_
     single_model = []
     for key in single.keys():
         single_model.append(single[key])
+    _, logits_single, hidden_states_single = get_loss(example_dataset, model, batch_size)
     final_state_dict = {}
     # module list is the list
     lora_module_list = list(cache.keys())
@@ -185,13 +200,23 @@ def get_score(weights, model, cache, example_dataset, batch_size, get_loss, get_
     for key in aggregated.keys():
         aggregated_model.append(aggregated[key])
     # minimize the metric
-    loss = get_loss(example_dataset, model, batch_size)
+    loss, logits_aggregated, hidden_states_aggregated = get_loss(example_dataset, model, batch_size)
     # L1 regularization term
-    L2 = default_l2_regularization(weights)
-    KL = get_kl_rep(single_model, aggregated_model)
-    print(L2)
-    print(KL)
-    metric_val = loss + get_regular(weights) + KL + L2
+    logits_single = torch.mean(logits_single, dim=1)
+    logits_aggregated = torch.mean(logits_aggregated, dim=1)
+    hidden_states_single = torch.mean(hidden_states_single, dim=1)
+    hidden_states_aggregated = torch.mean(hidden_states_aggregated, dim=1)
+    # L2 = default_l2_regularization(weights)
+    # KL = get_kl_rep(single_model, aggregated_model)
+    L2_logits = torch.norm(logits_single - logits_aggregated, p=2).item()
+    KL_logits = torch.nn.functional.kl_div(torch.nn.functional.log_softmax(logits_single, dim=1), torch.nn.functional.softmax(logits_aggregated, dim=1), reduction='batchmean').item()
+    L2_hidden_states = torch.norm(hidden_states_single - hidden_states_aggregated, p=2).item()
+    KL_hidden_states = torch.nn.functional.kl_div(torch.nn.functional.log_softmax(hidden_states_single, dim=1),
+                                           torch.nn.functional.softmax(hidden_states_aggregated, dim=1),
+                                           reduction='batchmean').item()
+    print(L2_hidden_states)
+    print(KL_hidden_states)
+    metric_val = loss + get_regular(weights) + L2_hidden_states
     
     return metric_val
 
