@@ -1,5 +1,6 @@
 from transformers import AutoModelForSeq2SeqLM
 from peft import PeftModel, get_peft_model_state_dict, set_peft_model_state_dict
+from Adlorahub import adlorahub_learning
 from lorahub import lorahub_learning
 from itertools import combinations
 from utils import evaluation
@@ -39,6 +40,17 @@ def weighted_aggregation(base_model, lora_adaptors, weights):
 def lorahub_aggregation(model, lora_adaptors, data, tokenizer, batch_size, sample_size = 5, max_inference_step = 40, seed = 42):
     data = data[:sample_size]
     weights, model = lorahub_learning(lora_adaptors = lora_adaptors,
+                                       model = model,
+                                       data = data,
+                                       tokenizer = tokenizer,
+                                       batch_size = batch_size,
+                                       max_inference_step = max_inference_step,
+                                       seed = seed)
+    return weights, model
+
+def adlorahub_aggregation(model, lora_adaptors, data, tokenizer, batch_size, sample_size = 5, max_inference_step = 40, seed = 42):
+    data = data[:sample_size]
+    weights, model = adlorahub_learning(lora_adaptors = lora_adaptors,
                                        model = model,
                                        data = data,
                                        tokenizer = tokenizer,
