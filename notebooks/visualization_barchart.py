@@ -12,13 +12,15 @@ import numpy as np
 
 
 def get_results_csv(path):
+    adlorahub = path + "_adlorahub.csv"
+    adlorahub_weights = path + "_adlorahub_weights.csv"
     avg = path + "_avg.csv"
     cv = path + "_cv.csv"
     cv_weights = path + "_cv_weights.csv"
     lorahub = path + "_lorahub.csv"
     lorahub_weights = path + "_lorahub_weights.csv"
     single = path + "_single.csv"
-    files = [avg, cv, cv_weights, lorahub, lorahub_weights, single]
+    files = [adlorahub, adlorahub_weights, avg, cv, cv_weights, lorahub, lorahub_weights, single]
     results = []
     for file in files:
         result = pd.read_csv(file, header=None)
@@ -31,7 +33,7 @@ for task in tasks_glue:
 
 mean_perf_on_other_clients_glue = []
 for task in results_on_glue:
-    lora_perf = task[3]
+    lora_perf = task[5]
     client_perf = []
     sum = 0
     for j in range(3, 10):
@@ -42,9 +44,22 @@ for task in results_on_glue:
     sum /= 49
     mean_perf_on_other_clients_glue.append(sum)
 
+mean_perf_on_other_clients_glue_ad = []
+for task in results_on_glue:
+    adlora_perf = task[0]
+    client_perf = []
+    sum = 0
+    for j in range(3, 10):
+        for k in range(3, 10):
+            # if k == j:
+            #     continue
+            sum += adlora_perf[j][k]
+    sum /= 49
+    mean_perf_on_other_clients_glue_ad.append(sum)
+
 baseline_glue_single = []
 for task in results_on_glue:
-    single_perf = task[5]
+    single_perf = task[7]
     client_perf = []
     sum = 0
     for j in range(3, 10):
@@ -58,7 +73,7 @@ for task in results_on_glue:
 
 baseline_glue_cv = []
 for task in results_on_glue:
-    cv_perf = task[1]
+    cv_perf = task[3]
     client_perf = []
     sum = 0
     for j in range(3, 10):
@@ -71,7 +86,7 @@ for task in results_on_glue:
 
 baseline_glue_avg = []
 for task in results_on_glue:
-    avg_perf = task[0][3:-2]
+    avg_perf = task[2][3:-2]
     baseline_glue_avg.append(avg_perf)
 
 print(mean_perf_on_other_clients_glue)
