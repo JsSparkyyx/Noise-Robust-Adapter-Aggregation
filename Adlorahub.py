@@ -216,7 +216,7 @@ def get_score(weights, model, cache, example_dataset, batch_size, get_loss, get_
                                            reduction='batchmean').item()
     print(L2_hidden_states)
     print(KL_hidden_states)
-    metric_val = loss + get_regular(weights) + L2_hidden_states
+    metric_val = loss + get_regular(weights) + KL_hidden_states
     
     return metric_val
 
@@ -338,6 +338,7 @@ def adlorahub_learning(lora_adaptors,
     optimizer = ng.optimizers.NGOpt(parametrization=instrum, budget=max_inference_step)
     print("> Begin to perform gradient-free optimization ...")
     recommendation = optimizer.minimize(get_score_partial, verbosity=1)
+    np.save("adweight.npy", recommendation.value)
     final_lora = get_final_weights(recommendation.value, lora_module_list, cache)
     # set the final weights
     set_peft_model_state_dict(model, final_lora)
